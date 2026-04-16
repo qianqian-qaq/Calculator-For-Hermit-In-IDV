@@ -7,12 +7,13 @@ class Survivor:
         self.name = name
         self.hp = initial_hp
         self.elect = "无"
+        self.invincible = False
 
 class FifthPersonalityDamageCalc:
     def __init__(self, root):
         self.root = root
         self.root.title("第五人格 - 隐士伤害计算器")
-        self.root.geometry("1000x800")   # 增加高度
+        self.root.geometry("1000x850")
         self.root.resizable(True, True)
         self.root.configure(bg="#2b2b2b")
 
@@ -49,17 +50,22 @@ class FifthPersonalityDamageCalc:
         main_frame.grid_columnconfigure(1, weight=1)
 
         self.frames = []
+        self.invincible_btns = []
         for idx in range(4):
-            # 减少垂直内边距 pady=5, 并减小 LabelFrame 内部边距
             panel = tk.LabelFrame(left_frame, text=self.survivors[idx].name, font=("微软雅黑", 11, "bold"),
                                   bg="#3c3f41", fg="white", padx=8, pady=5, relief=tk.RIDGE, bd=2)
-            panel.pack(fill="x", pady=5)   # 面板之间间距从8改为5
+            panel.pack(fill="x", pady=5)
             self.frames.append(panel)
 
-            # 血量标签，减小字体和间距
-            hp_label = tk.Label(panel, text=f"血量: {self.survivors[idx].hp:.1f}", font=("微软雅黑", 12),
+            hp_frame = tk.Frame(panel, bg="#3c3f41")
+            hp_frame.pack(pady=2)
+            hp_label = tk.Label(hp_frame, text=f"血量: {self.survivors[idx].hp:.1f}", font=("微软雅黑", 12),
                                 bg="#3c3f41", fg="#f1c40f")
-            hp_label.pack(pady=2)   # 从5改为2
+            hp_label.pack(side="left")
+            inv_status = tk.Label(hp_frame, text="", font=("微软雅黑", 10), bg="#3c3f41", fg="#f39c12")
+            inv_status.pack(side="left", padx=5)
+            panel.hp_label = hp_label
+            panel.inv_status = inv_status
 
             elect_var = tk.StringVar(value=self.survivors[idx].elect)
             elect_menu = ttk.Combobox(panel, textvariable=elect_var, values=["红", "蓝", "无"],
@@ -72,14 +78,18 @@ class FifthPersonalityDamageCalc:
                                    command=lambda i=idx: self.attack_survivor(i))
             attack_btn.pack(pady=2)
 
-            heal_btn = tk.Button(panel, text="💚 治疗 (+0.5)", font=("微软雅黑", 8),
+            action_frame = tk.Frame(panel, bg="#3c3f41")
+            action_frame.pack(pady=2)
+            heal_btn = tk.Button(action_frame, text="💚 治疗 (+0.5)", font=("微软雅黑", 8),
                                  bg="#2ecc71", fg="white", activebackground="#27ae60",
                                  command=lambda i=idx: self.heal_survivor(i))
-            heal_btn.pack(pady=2)
+            heal_btn.pack(side="left", padx=2)
+            inv_btn = tk.Button(action_frame, text="🛡️ 无敌 OFF", font=("微软雅黑", 8),
+                                bg="#7f8c8d", fg="white", activebackground="#95a5a6",
+                                command=lambda i=idx: self.toggle_invincible(i))
+            inv_btn.pack(side="left", padx=2)
+            self.invincible_btns.append(inv_btn)
 
-            panel.hp_label = hp_label
-
-        # 右侧图片框（保持占位，高度跟随左侧）
         for idx in range(4):
             img_frame = tk.LabelFrame(right_frame, text=f"{self.survivors[idx].name} 状态", font=("微软雅黑", 9, "bold"),
                                       bg="#3c3f41", fg="white", relief=tk.RIDGE, bd=2)
@@ -88,7 +98,6 @@ class FifthPersonalityDamageCalc:
             img_label.pack(expand=True, fill="both", padx=5, pady=5)
             self.image_labels.append(img_label)
 
-        # 底部选项栏
         option_frame = tk.Frame(self.root, bg="#2b2b2b")
         option_frame.pack(fill="x", pady=5, padx=20, side="bottom")
 
@@ -108,7 +117,18 @@ class FifthPersonalityDamageCalc:
                                    font=("微软雅黑", 9), bg="#2b2b2b", fg="#bdc3c7")
         self.info_label.pack()
 
-    # ---------- 核心功能 ----------
+    def toggle_invincible(self, idx):
+        s = self.survivors[idx]
+        s.invincible = not s.invincible
+        btn = self.invincible_btns[idx]
+        if s.invincible:
+            btn.config(text="🛡️ 无敌 ON", bg="#f39c12")
+            self.frames[idx].inv_status.config(text="🛡️")
+        else:
+            btn.config(text="🛡️ 无敌 OFF", bg="#7f8c8d")
+            self.frames[idx].inv_status.config(text="")
+        self.update_display()
+
     def change_elect(self, idx, elect):
         self.survivors[idx].elect = elect
         color = self.elect_colors.get(elect, "#3c3f41")
@@ -126,9 +146,19 @@ class FifthPersonalityDamageCalc:
 
     def attack_survivor(self, target_idx):
         target = self.survivors[target_idx]
-        elect = target.elect
 
-        # 关键修正：如果目标不带电，则只有目标自己承受伤害，不与其他不带电分摊
+        # 新增：如果目标处于无敌状态，攻击无效，仅关闭无敌
+        if target.invincible:
+            target.invincible = False
+            # 更新无敌按钮和状态图标
+            self.invincible_btns[target_idx].config(text="🛡️ 无敌 OFF", bg="#7f8c8d")
+            self.frames[target_idx].inv_status.config(text="")
+            self.update_display()
+            self.info_label.config(text=f"攻击无效！{target.name} 处于无敌状态，本次攻击不造成任何伤害。无敌状态已解除。")
+            return
+
+        # 正常攻击流程
+        elect = target.elect
         if elect == "无":
             same_elect_indices = [target_idx]
         else:
@@ -145,25 +175,31 @@ class FifthPersonalityDamageCalc:
         else:
             damage_per_person = raw_damage_per
 
-        # 应用伤害
+        immune_list = []
         for i in same_elect_indices:
-            self.survivors[i].hp = max(0, self.survivors[i].hp - damage_per_person)
-
-        # 受伤后变为不带电（仅对实际受到伤害的人）
-        for i in same_elect_indices:
-            if self.survivors[i].elect != "无":
-                self.survivors[i].elect = "无"
-                self.change_elect(i, "无")
+            if self.survivors[i].invincible:
+                immune_list.append(self.survivors[i].name)
+                self.survivors[i].invincible = False
+                self.invincible_btns[i].config(text="🛡️ 无敌 OFF", bg="#7f8c8d")
+                self.frames[i].inv_status.config(text="")
+            else:
+                self.survivors[i].hp = max(0, self.survivors[i].hp - damage_per_person)
+                if self.survivors[i].elect != "无":
+                    self.survivors[i].elect = "无"
+                    self.change_elect(i, "无")
 
         self.update_display()
 
-        # 提示信息
         names = [self.survivors[i].name for i in same_elect_indices]
         mode_str = "（高伤模式）" if self.high_damage_mode.get() else ""
         if elect == "无":
             msg = f"攻击 {target.name}（不带电）{mode_str}\n只有 {target.name} 受到 {damage_per_person:.4f} 伤害，且变为不带电"
         else:
-            msg = f"攻击 {target.name}（{elect}电）{mode_str}\n总伤害 {base_damage} 分摊给 {', '.join(names)}，每人受到 {damage_per_person:.4f} 伤害\n受伤后他们全部变为不带电"
+            msg = f"攻击 {target.name}（{elect}电）{mode_str}\n总伤害 {base_damage} 分摊给 {', '.join(names)}，每人应受 {damage_per_person:.4f} 伤害"
+        if immune_list:
+            msg += f"\n【无敌免疫】{', '.join(immune_list)} 免疫了本次伤害，不扣血且保持电极。"
+        else:
+            msg += "\n受伤后他们全部变为不带电"
         self.info_label.config(text=msg)
 
         downed = [s.name for s in self.survivors if s.hp <= 0]
@@ -182,6 +218,15 @@ class FifthPersonalityDamageCalc:
             for child in self.frames[idx].winfo_children():
                 if isinstance(child, (tk.Label, tk.Frame)):
                     child.configure(bg=color)
+            if s.invincible:
+                self.frames[idx].inv_status.config(text="🛡️")
+            else:
+                self.frames[idx].inv_status.config(text="")
+            btn = self.invincible_btns[idx]
+            if s.invincible:
+                btn.config(text="🛡️ 无敌 ON", bg="#f39c12")
+            else:
+                btn.config(text="🛡️ 无敌 OFF", bg="#7f8c8d")
 
     def reset_hp(self):
         for s in self.survivors:
