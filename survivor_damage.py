@@ -4,7 +4,7 @@ import math
 
 class Survivor:
     def __init__(self, name_key, initial_hp=2.0):
-        self.name_key = name_key   # 存储语言键，如 "survivor1"
+        self.name_key = name_key
         self.hp = initial_hp
         self.elect = "无"
         self.invincible = False
@@ -13,27 +13,19 @@ class FifthPersonalityDamageCalc:
     def __init__(self, root):
         self.root = root
         self.root.title("第五人格 - 隐士伤害计算器")
-        self.root.geometry("1100x800")
+        self.root.geometry("800x620")  # 2x2布局，宽度稍宽，高度适中
         self.root.resizable(True, True)
         self.root.configure(bg="#2b2b2b")
 
-        # 求生者名称键
         self.survivor_keys = ["survivor1", "survivor2", "survivor3", "survivor4"]
-        self.survivors = [
-            Survivor("survivor1"),
-            Survivor("survivor2"),
-            Survivor("survivor3"),
-            Survivor("survivor4")
-        ]
+        self.survivors = [Survivor(key) for key in self.survivor_keys]
 
-        # 电极颜色（不随主题改变）
         self.elect_colors = {
             "红": "#e74c3c",
             "蓝": "#3498db",
             "无": "#7f8c8d"
         }
 
-        # 主题颜色定义
         self.themes = {
             "dark": {
                 "bg": "#2b2b2b",
@@ -70,9 +62,7 @@ class FifthPersonalityDamageCalc:
 
         self.high_damage_mode = tk.BooleanVar(value=False)
         self.current_lang = tk.StringVar(value="CN")
-        self.image_labels = []
 
-        # 完整语言文本库
         self.lang_texts = {
             "CN": {
                 "title": "隐士 · 电流分摊计算器",
@@ -90,9 +80,9 @@ class FifthPersonalityDamageCalc:
                 "heal": "💚 治疗 (+0.5)",
                 "invincible_on": "🛡️ 无敌 ON",
                 "invincible_off": "🛡️ 无敌 OFF",
-                "high_damage": "恐惧震慑 / 触发挽留 (伤害2.2, 分摊向上取整4位小数)",
+                "high_damage": "恐惧震慑 / 触发挽留 (伤害2.2, 向上取整4位)",
                 "reset_hp": "重置全部血量",
-                "info_default": "点击攻击按钮，伤害会在相同电极的求生者之间分摊（不带电时不分摊）",
+                "info_default": "点击攻击，伤害会在相同电极的求生者之间分摊（不带电时不分摊）",
                 "heal_msg": "{} 恢复了 0.5 血量，当前血量 {:.1f}",
                 "attack_invalid": "攻击无效！{} 处于无敌状态，本次攻击不造成任何伤害。无敌状态已解除。",
                 "attack_no_elect": "攻击 {}（不带电）{}",
@@ -104,8 +94,6 @@ class FifthPersonalityDamageCalc:
                 "downed_warning": "倒地提示",
                 "downed_msg": "{} 已倒地！",
                 "reset_msg": "血量已重置，所有求生者恢复 2.0 血，电极保持不变",
-                "image_placeholder": "图片功能暂缓\n(后续可加)",
-                "status_label": "状态",
                 "theme_dark": "深色主题",
                 "theme_light": "浅色主题",
             },
@@ -125,9 +113,9 @@ class FifthPersonalityDamageCalc:
                 "heal": "💚 Heal (+0.5)",
                 "invincible_on": "🛡️ Invincible ON",
                 "invincible_off": "🛡️ Invincible OFF",
-                "high_damage": "Terror Shock / Detention (DMG 2.2, ceiling 4 decimals)",
+                "high_damage": "Terror Shock / Detention (DMG 2.2, ceiling 4)",
                 "reset_hp": "Reset HP",
-                "info_default": "Click attack: damage is shared among survivors with same charge (no sharing if no charge)",
+                "info_default": "Click attack: damage shared among same charge (no sharing if no charge)",
                 "heal_msg": "{} recovered 0.5 HP, current HP {:.1f}",
                 "attack_invalid": "Attack invalid! {} is invincible, no damage dealt. Invincibility removed.",
                 "attack_no_elect": "Attack {} (No charge) {}",
@@ -139,8 +127,6 @@ class FifthPersonalityDamageCalc:
                 "downed_warning": "Downed Alert",
                 "downed_msg": "{} has been downed!",
                 "reset_msg": "HP reset to 2.0 for all survivors, charges unchanged",
-                "image_placeholder": "Image function pending\n(add later)",
-                "status_label": "Status",
                 "theme_dark": "Dark Theme",
                 "theme_light": "Light Theme",
             },
@@ -160,22 +146,20 @@ class FifthPersonalityDamageCalc:
                 "heal": "💚 治療 (+0.5)",
                 "invincible_on": "🛡️ 無敵 ON",
                 "invincible_off": "🛡️ 無敵 OFF",
-                "high_damage": "恐怖震撼／執念 (ダメージ2.2, 分担時小数点第4位切り上げ)",
+                "high_damage": "恐怖震撼／執念 (ダメージ2.2, 切り上げ4桁)",
                 "reset_hp": "HPリセット",
-                "info_default": "攻撃ボタンを押すと、同じ電極のサバイバーにダメージが分担されます（電極なしの場合は分担なし）",
+                "info_default": "攻撃ボタン: 同じ電極のサバイバーにダメージ分担（電極なしは分担なし）",
                 "heal_msg": "{} は0.5回復、現在HP {:.1f}",
-                "attack_invalid": "攻撃無効！ {} は無敵状態のため、ダメージはありません。無敵状態を解除しました。",
+                "attack_invalid": "攻撃無効！ {} は無敵状態のためダメージなし。無敵解除。",
                 "attack_no_elect": "{}（電極なし）を攻撃 {}",
                 "attack_with_elect": "{}（{}電）を攻撃 {}",
-                "only_self": "{} のみが {:.4f} ダメージを受け、電極なしになる",
+                "only_self": "{} のみが {:.4f} ダメージ、電極なしになる",
                 "damage_split": "総ダメージ {:.1f} を {} で分担、各 {:.4f} ダメージ",
-                "immune_msg": "\n【無敵】{} はダメージを無効化、HPと電極は変化なし",
+                "immune_msg": "\n【無敵】{} はダメージ無効、HPと電極変化なし",
                 "no_immune_msg": "\n負傷後は全員が電極なしになる",
                 "downed_warning": "ダウン警告",
                 "downed_msg": "{} がダウンした！",
-                "reset_msg": "HPをリセットしました。全サバイバーのHPが2.0に戻り、電極はそのまま",
-                "image_placeholder": "画像機能は保留中\n(後で追加)",
-                "status_label": "状態",
+                "reset_msg": "HPリセット: 全サバイバーのHP2.0、電極維持",
                 "theme_dark": "ダークテーマ",
                 "theme_light": "ライトテーマ",
             }
@@ -189,25 +173,17 @@ class FifthPersonalityDamageCalc:
     def create_widgets(self):
         # 主容器
         main_container = tk.Frame(self.root)
-        main_container.pack(fill="both", expand=True, padx=20, pady=20)
+        main_container.pack(fill="both", expand=True, padx=15, pady=15)
 
-        # 内容区域（左右两部分）
-        content_frame = tk.Frame(main_container)
-        content_frame.pack(fill="both", expand=True)
+        # 求生者面板容器（使用grid 2x2）
+        grid_frame = tk.Frame(main_container)
+        grid_frame.pack(fill="both", expand=True)
 
-        # 左侧面板容器（求生者）
-        left_frame = tk.Frame(content_frame)
-        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 20))
+        # 配置grid行列权重，使面板均匀分布
+        for i in range(2):
+            grid_frame.grid_rowconfigure(i, weight=1, uniform="row")
+            grid_frame.grid_columnconfigure(i, weight=1, uniform="col")
 
-        # 右侧图片容器
-        right_frame = tk.Frame(content_frame)
-        right_frame.pack(side="right", fill="both", expand=True)
-
-        # 底部控制栏
-        bottom_frame = tk.Frame(main_container)
-        bottom_frame.pack(side="bottom", fill="x", pady=(10, 0))
-
-        # 创建四个求生者面板
         self.frames = []
         self.invincible_btns = []
         self.hp_labels = []
@@ -215,21 +191,23 @@ class FifthPersonalityDamageCalc:
         self.elect_menus = []
         self.attack_btns = []
         self.heal_btns = []
-        self.panel_labels = []  # 存储每个面板的LabelFrame对象，用于更新标题
+        self.panel_labels = []
 
         for idx in range(4):
-            panel = tk.LabelFrame(left_frame, font=("微软雅黑", 11, "bold"),
-                                  padx=8, pady=5, relief=tk.RIDGE, bd=2)
-            panel.pack(fill="x", pady=5, expand=False)
+            row = idx // 2
+            col = idx % 2
+            panel = tk.LabelFrame(grid_frame, font=("微软雅黑", 11, "bold"),
+                                  padx=8, pady=6, relief=tk.RIDGE, bd=2)
+            panel.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
             self.frames.append(panel)
-            self.panel_labels.append(panel)  # 保存以便更新标题
+            self.panel_labels.append(panel)
 
             # 血量行
             hp_frame = tk.Frame(panel)
             hp_frame.pack(fill="x", pady=2)
-            hp_label = tk.Label(hp_frame, font=("微软雅黑", 12))
+            hp_label = tk.Label(hp_frame, font=("微软雅黑", 12, "bold"))
             hp_label.pack(side="left")
-            inv_status = tk.Label(hp_frame, text="", font=("微软雅黑", 10))
+            inv_status = tk.Label(hp_frame, text="", font=("微软雅黑", 10), fg="#f39c12")
             inv_status.pack(side="left", padx=5)
             self.hp_labels.append(hp_label)
             self.inv_status_labels.append(inv_status)
@@ -237,40 +215,33 @@ class FifthPersonalityDamageCalc:
             # 电极下拉菜单
             elect_var = tk.StringVar(value=self.survivors[idx].elect)
             elect_menu = ttk.Combobox(panel, textvariable=elect_var, values=["红", "蓝", "无"],
-                                      state="readonly", width=6, font=("微软雅黑", 9))
-            elect_menu.pack(pady=2, fill="x")
+                                      state="readonly", width=8, font=("微软雅黑", 9))
+            elect_menu.pack(pady=4, fill="x")
             elect_menu.bind("<<ComboboxSelected>>", lambda e, i=idx, var=elect_var: self.change_elect(i, var.get()))
             self.elect_menus.append(elect_menu)
 
             # 攻击按钮
-            attack_btn = tk.Button(panel, font=("微软雅黑", 9, "bold"),
+            attack_btn = tk.Button(panel, font=("微软雅黑", 10, "bold"),
                                    command=lambda i=idx: self.attack_survivor(i))
-            attack_btn.pack(pady=2, fill="x")
+            attack_btn.pack(pady=4, fill="x")
             self.attack_btns.append(attack_btn)
 
             # 治疗和无敌按钮行
             action_frame = tk.Frame(panel)
             action_frame.pack(fill="x", pady=2)
-            heal_btn = tk.Button(action_frame, font=("微软雅黑", 8),
+            heal_btn = tk.Button(action_frame, font=("微软雅黑", 9),
                                  command=lambda i=idx: self.heal_survivor(i))
             heal_btn.pack(side="left", expand=True, fill="x", padx=2)
-            inv_btn = tk.Button(action_frame, font=("微软雅黑", 8),
+            inv_btn = tk.Button(action_frame, font=("微软雅黑", 9),
                                 command=lambda i=idx: self.toggle_invincible(i))
             inv_btn.pack(side="left", expand=True, fill="x", padx=2)
             self.heal_btns.append(heal_btn)
             self.invincible_btns.append(inv_btn)
 
-        # 右侧图片框
-        self.right_frames = []  # 存储右侧每个图片框的LabelFrame和Label
-        for idx in range(4):
-            img_frame = tk.LabelFrame(right_frame, font=("微软雅黑", 9, "bold"), relief=tk.RIDGE, bd=2)
-            img_frame.pack(fill="both", expand=True, pady=5)
-            img_label = tk.Label(img_frame, font=("微软雅黑", 9))
-            img_label.pack(expand=True, fill="both", padx=5, pady=5)
-            self.image_labels.append((img_frame, img_label))
-            self.right_frames.append(img_frame)
+        # 底部控制栏
+        bottom_frame = tk.Frame(main_container)
+        bottom_frame.pack(side="bottom", fill="x", pady=(10, 0))
 
-        # 底部控制栏组件
         left_controls = tk.Frame(bottom_frame)
         left_controls.pack(side="left", padx=5)
 
@@ -306,7 +277,7 @@ class FifthPersonalityDamageCalc:
         # 信息栏
         info_frame = tk.Frame(main_container)
         info_frame.pack(side="bottom", fill="x", pady=(5,0))
-        self.info_label = tk.Label(info_frame, font=("微软雅黑", 9))
+        self.info_label = tk.Label(info_frame, font=("微软雅黑", 9), wraplength=700, justify="left")
         self.info_label.pack()
 
     def apply_theme(self):
@@ -315,7 +286,6 @@ class FifthPersonalityDamageCalc:
 
         self.root.configure(bg=colors["bg"])
 
-        # 设置各个组件的主题颜色（不覆盖电极颜色）
         for frame in self.frames:
             for child in frame.winfo_children():
                 if isinstance(child, (tk.Frame, tk.LabelFrame)):
@@ -325,7 +295,7 @@ class FifthPersonalityDamageCalc:
         for hp_label in self.hp_labels:
             hp_label.configure(bg=colors["panel_bg"], fg=colors["hp_fg"])
         for inv_label in self.inv_status_labels:
-            inv_label.configure(bg=colors["panel_bg"], fg=colors["hp_fg"])
+            inv_label.configure(bg=colors["panel_bg"])
         for menu in self.elect_menus:
             menu.configure(foreground=colors["combobox_fg"])
             try:
@@ -339,12 +309,9 @@ class FifthPersonalityDamageCalc:
         self.reset_btn.configure(bg=colors["button_reset"], fg="white")
         self.info_label.configure(bg=colors["bg"], fg=colors["info_fg"])
         self.high_damage_check.configure(bg=colors["bg"], fg=colors["fg"], selectcolor=colors["bg"])
-        for img_frame, img_label in self.image_labels:
-            img_frame.configure(bg=colors["panel_bg"], fg=colors["panel_fg"])
-            img_label.configure(bg=colors["panel_bg"], fg=colors["panel_fg"])
 
         # 底部控制栏背景
-        bottom_frame = self.root.winfo_children()[0].winfo_children()[-1] if len(self.root.winfo_children())>0 else None
+        bottom_frame = self.root.winfo_children()[0].winfo_children()[-1] if self.root.winfo_children() else None
         if bottom_frame:
             bottom_frame.configure(bg=colors["bg"])
             for child in bottom_frame.winfo_children():
@@ -362,7 +329,6 @@ class FifthPersonalityDamageCalc:
             else:
                 btn.configure(bg=colors["button_inv_off"], fg="white", text=texts['invincible_off'])
 
-        # 重新应用电极颜色（覆盖面板背景）
         self.update_display()
 
     def apply_language(self):
@@ -371,18 +337,9 @@ class FifthPersonalityDamageCalc:
 
         self.root.title(texts['title'])
 
-        # 更新求生者名字显示：面板标题、右侧图片框标题、以及存储的name_key对应的显示名（但攻击消息中使用的是显示名，需要动态获取）
         for idx in range(4):
             survivor_name = texts[self.survivor_keys[idx]]
-            # 更新左侧面板的LabelFrame标题
             self.panel_labels[idx].config(text=survivor_name)
-            # 更新右侧图片框的LabelFrame标题
-            self.right_frames[idx].config(text=f"{survivor_name} {texts['status_label']}")
-            # 更新右侧图片框内的占位文字（如果后续有图片，则图片标签的文本也会变）
-            self.image_labels[idx][1].config(text=texts['image_placeholder'])
-
-        # 更新按钮文字
-        for idx in range(4):
             self.attack_btns[idx].config(text=texts['attack'])
             self.heal_btns[idx].config(text=texts['heal'])
             if self.survivors[idx].invincible:
@@ -391,7 +348,6 @@ class FifthPersonalityDamageCalc:
                 self.invincible_btns[idx].config(text=texts['invincible_off'])
             self.update_hp_label(idx)
 
-        # 更新电极下拉菜单选项和当前值
         for elect_menu in self.elect_menus:
             current_val = elect_menu.get()
             if current_val in ["红", "Red", "赤"]:
@@ -405,7 +361,6 @@ class FifthPersonalityDamageCalc:
             elect_menu.config(values=[texts['elect_red'], texts['elect_blue'], texts['elect_none']])
             elect_menu.set(new_val)
 
-        # 更新底部标签文字
         self.lang_label.config(text=texts['lang_label'])
         self.theme_label.config(text=texts['theme_label'])
         self.high_damage_check.config(text=texts['high_damage'])
@@ -421,7 +376,6 @@ class FifthPersonalityDamageCalc:
         self.hp_labels[idx].config(text=hp_text)
 
     def get_survivor_name(self, idx):
-        """根据当前语言返回求生者显示名"""
         lang = self.current_lang.get()
         texts = self.lang_texts[lang]
         return texts[self.survivor_keys[idx]]
@@ -549,7 +503,6 @@ class FifthPersonalityDamageCalc:
             else:
                 display_elect = texts['elect_none']
             self.elect_menus[idx].set(display_elect)
-            # 设置面板背景色为电极颜色
             color = self.elect_colors.get(s.elect, "#3c3f41")
             self.frames[idx].configure(bg=color)
             for child in self.frames[idx].winfo_children():
